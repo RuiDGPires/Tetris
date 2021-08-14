@@ -1,6 +1,6 @@
 const GRID_WIDTH = 10;
 const GRID_HEIGHT = 20;
-const cell_size = 25;
+const cell_size = 35;
 
 const X = 0;
 const Y = 1;
@@ -262,7 +262,8 @@ function draw() {
   background(20);
   drawGrid();
   drawPoints();
-  current_piece.draw();
+  if (current_piece != null)
+    current_piece.draw();
 }
 
 let checkKey;
@@ -306,6 +307,8 @@ function keyReleased(){
 }
 
 function endGame(){
+  current_piece = null;
+  draw();
   freeze = true;
   clearInterval(gravity);
   fill(250,250,255);
