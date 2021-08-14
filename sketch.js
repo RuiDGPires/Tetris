@@ -167,18 +167,24 @@ function createGrid(){
   for (let i = 0; i < GRID_HEIGHT; i++){
     grid.push([].concat(aux));
   }
-  console.log(grid);
 }
 
 let current_piece;
+let next_piece = null;
+
 let gravity;
 const BASE_GRAVITY = 1.4;
 
 function newPiece(){
-  current_piece = new Piece(random(Object.values((PieceType))));
+  if (next_piece == null){
+    next_piece = random(Object.values((PieceType)));
+  }
+  current_piece = new Piece(next_piece);
+
   if (!current_piece.formFits(current_piece.type[current_piece.rotation])){
     endGame();
   }
+  next_piece = random(Object.values((PieceType)));
 }
 
 function setup() {
@@ -205,6 +211,52 @@ function drawCell(grid_x, grid_y, empty) {
   pop();
 }
 
+function drawGrid(){
+  for(var j = 0; j < GRID_HEIGHT; j++){
+    for (var i = 0; i < GRID_WIDTH; i++){
+      drawCell(i,j, grid[j][i] == 0);
+    }
+  }
+}
+
+function drawPoints(){
+  push();
+  fill(250,250,255);
+  textStyle(BOLD);
+  textSize(windowWidth/50);
+  textAlign(CENTER);
+  text("Score: " + points, windowWidth/3, windowHeight/4);
+  pop();
+}
+
+function drawNextPiece(){
+  push();
+
+  fill(5, 180, 60);
+  stroke(5, 180, 60)
+
+  let offset = [windowWidth*23/37, windowHeight*3/17]
+  for (var i = 0; i < next_piece[0].length; i++){
+    for (var j = 0; j < next_piece[0].length; j++){
+      if (next_piece[0][j][i] == 1){
+        square(offset[X] + i*cell_size, offset[Y]+ j*cell_size, cell_size);
+      }
+    }
+  }
+  
+  pop();
+}
+
+function draw() {
+  background(20);
+  drawGrid();
+  drawPoints();
+  if (current_piece != null){
+    current_piece.draw();
+  }
+  drawNextPiece();
+}
+
 function checkTetris(){
   let n = 0;
   for(let y = GRID_HEIGHT - 1; y >= 0; y--){
@@ -228,7 +280,6 @@ function checkTetris(){
 
 function pieceDies(form, corner){
   points += 1;
-  console.log(form)
   for (let i = 0; i < form.length; i++){
     for (let j = 0; j < form.length; j++){
       if (form[j][i] == 1){
@@ -240,31 +291,6 @@ function pieceDies(form, corner){
   newPiece();
 }
 
-function drawGrid(){
-  for(var j = 0; j < GRID_HEIGHT; j++){
-    for (var i = 0; i < GRID_WIDTH; i++){
-      drawCell(i,j, grid[j][i] == 0);
-    }
-  }
-}
-
-function drawPoints(){
-  push();
-  fill(250,250,255);
-  textStyle(BOLD);
-  textSize(windowWidth/50);
-  textAlign(CENTER);
-  text("Score: " + points, windowWidth/3, windowHeight/4);
-  pop();
-}
-
-function draw() {
-  background(20);
-  drawGrid();
-  drawPoints();
-  if (current_piece != null)
-    current_piece.draw();
-}
 
 let checkKey;
 let continuousMove;
