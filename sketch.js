@@ -162,12 +162,19 @@ function createGrid(){
   console.log(grid);
 }
 
-let current_piece = new Piece(PieceType.S);
+let current_piece;
+let gravity;
+const BASE_GRAVITY = 1.4;
+
+function newPiece(){
+  current_piece = new Piece(random(Object.values((PieceType))));
+}
 
 function setup() {
   randomSeed();
+  newPiece();
   createGrid();
-  setInterval(() => {current_piece.down()}, 250);
+  gravity = setInterval(() => {current_piece.down()}, 1000/BASE_GRAVITY);
   frameRate(14);
   createCanvas(windowWidth*0.99, windowHeight*0.99);
 }
@@ -197,7 +204,7 @@ function pieceDies(form, corner){
       }
     }
   }
-  current_piece = new Piece(PieceType.LL);
+  newPiece();
 }
 
 function drawGrid(){
@@ -221,5 +228,15 @@ function keyPressed() {
     current_piece.move(1);
   }else if (keyCode === UP_ARROW){
     current_piece.rotate();
+  }else if (keyCode === DOWN_ARROW){
+    clearInterval(gravity);
+    gravity = setInterval(() => {current_piece.down()}, 120/BASE_GRAVITY);
+  }
+}
+
+function keyReleased(){
+  if (keyCode === DOWN_ARROW){
+    clearInterval(gravity);
+    gravity = setInterval(() => {current_piece.down()}, 1000/BASE_GRAVITY);
   }
 }
