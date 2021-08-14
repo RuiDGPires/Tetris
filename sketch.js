@@ -1,9 +1,12 @@
 const GRID_WIDTH = 10;
-const GRID_HEIGHT = 25;
+const GRID_HEIGHT = 20;
 const cell_size = 25;
 
 const X = 0;
 const Y = 1;
+
+let points = 0;
+let freeze = false;
 
 const PieceType = {
   T: [[[0,0,0],
@@ -109,14 +112,19 @@ class Piece {
     let new_rot = (this.rotation + 1) % this.mod;
     let new_form = this.type[new_rot];
 
+    if (this.formFits(new_form)){
+      this.rotation = new_rot;
+    }
+  }
+  formFits(form){
     for (let i = 0; i < this.type[0].length; i++){
       for (let j = 0; j < this.type[0].length; j++){
-        if (new_form[j][i] != 1) continue;
-        if (this.position[X] + i - this.center< 0 || this.position[X] + i - this.center >= GRID_WIDTH) return
-        if (grid[this.position[Y] + j - this.center][this.position[X] + i - this.center] == 1) return;
+        if (form[j][i] != 1) continue;
+        if (this.position[X] + i - this.center< 0 || this.position[X] + i - this.center >= GRID_WIDTH) return false;
+        if (grid[this.position[Y] + j - this.center][this.position[X] + i - this.center] == 1) return false;
       }
     }
-    this.rotation = new_rot;
+    return true;
   }
 
   colides(){
@@ -168,12 +176,15 @@ const BASE_GRAVITY = 1.4;
 
 function newPiece(){
   current_piece = new Piece(random(Object.values((PieceType))));
+  if (!current_piece.formFits(current_piece.type[current_piece.rotation])){
+    endGame();
+  }
 }
 
 function setup() {
   randomSeed();
-  newPiece();
   createGrid();
+  newPiece();
   gravity = setInterval(() => {current_piece.down()}, 1000/BASE_GRAVITY);
   frameRate(14);
   createCanvas(windowWidth*0.99, windowHeight*0.99);
@@ -194,8 +205,29 @@ function drawCell(grid_x, grid_y, empty) {
   pop();
 }
 
+function checkTetris(){
+  let n = 0;
+  for(let y = GRID_HEIGHT - 1; y >= 0; y--){
+    let isTetris = true;
+    for (let x = 0; x < GRID_WIDTH; x ++){
+      if (grid[y][x] == 0){
+        isTetris = false;
+      }
+    } 
+    if (!isTetris){
+      for (let x = 0; x < GRID_WIDTH; x++){
+        grid[y+n][x] = grid[y][x];
+      }
+    }else{
+      n += 1;
+    }
+  }
+  points += n*10;
+}
+
 
 function pieceDies(form, corner){
+  points += 1;
   console.log(form)
   for (let i = 0; i < form.length; i++){
     for (let j = 0; j < form.length; j++){
@@ -204,6 +236,7 @@ function pieceDies(form, corner){
       }
     }
   }
+  checkTetris();
   newPiece();
 }
 
@@ -215,28 +248,70 @@ function drawGrid(){
   }
 }
 
+function drawPoints(){
+  push();
+  fill(250,250,255);
+  textStyle(BOLD);
+  textSize(windowWidth/50);
+  textAlign(CENTER);
+  text("Score: " + points, windowWidth/3, windowHeight/4);
+  pop();
+}
+
 function draw() {
   background(20);
   drawGrid();
+  drawPoints();
   current_piece.draw();
 }
 
+let checkKey;
+let continuousMove;
+
+function sparkMove(dir){
+  continuousMove = setInterval(()=>current_piece.move(dir), 100);
+}
+
+let speed_gravity;
+
 function keyPressed() {
+  if (freeze) return;
   if (keyCode === LEFT_ARROW){
+    checkKey = setTimeout(()=>sparkMove(-1), 420);
     current_piece.move(-1);
   }else if (keyCode === RIGHT_ARROW){
+    checkKey = setTimeout(()=>sparkMove(1), 420);
     current_piece.move(1);
   }else if (keyCode === UP_ARROW){
     current_piece.rotate();
   }else if (keyCode === DOWN_ARROW){
-    clearInterval(gravity);
-    gravity = setInterval(() => {current_piece.down()}, 120/BASE_GRAVITY);
+    current_piece.down();
+    speed_gravity = setTimeout(()=>{
+      clearInterval(gravity);
+      gravity = setInterval(() => {current_piece.down()}, 60/BASE_GRAVITY);
+    }, 420);
   }
 }
 
 function keyReleased(){
+  if (freeze) return;
   if (keyCode === DOWN_ARROW){
+    clearTimeout(speed_gravity);
     clearInterval(gravity);
     gravity = setInterval(() => {current_piece.down()}, 1000/BASE_GRAVITY);
+  }else if (keyCode == RIGHT_ARROW || keyCode == LEFT_ARROW){
+    clearTimeout(checkKey);
+    clearInterval(continuousMove);
   }
+}
+
+function endGame(){
+  freeze = true;
+  clearInterval(gravity);
+  fill(250,250,255);
+  textStyle(BOLD);
+  textSize(windowWidth/20);
+  textAlign(CENTER);
+  text("GAME OVER | YOUR SCORE: " + points, windowWidth/2, windowHeight/2);
+  frameRate(0);
 }
